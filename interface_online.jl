@@ -154,7 +154,7 @@ end
 
 # ╔═╡ 0c9271ba-9631-44cf-872e-052499951d3d
 function draw_card(word, notwords, keyword, idx; color=colorant"red")
-	card = Drawing(500, 500, joinpath(keyword, "$(word)_$(idx).png"))
+	card = Drawing(500, 500, joinpath(keyword, """$(replace(word, " "=>"_"))_$(idx).png"""))
 	origin()
 	sethue(color)
 	squircle(O, 100, 120, rt=0.3, :fill)
@@ -191,18 +191,19 @@ mycolors = [collect(Colors.JULIA_LOGO_COLORS); RGB(0.94, 0.94, 0.3)]
 
 # ╔═╡ bce30e71-7d09-4dcc-b78f-1d65273e2166
 begin
+	nospacekeyword = replace(keyword, " "=>"_") * "_temporary"
 	if docompute
 		try
-			mkdir(keyword)
+			mkdir(nospacekeyword)
 		catch
-			rm(keyword, recursive=true)
-			mkdir(keyword)
+			rm(nospacekeyword, recursive=true)
+			mkdir(nospacekeyword)
 		end
 		pngs = []
 		for (idx, card2be) in enumerate(collect(cards2be)[1:min(length(cards2be),5)])
 			word, notwords = card2be
 			notwords = notwords[1:min(length(notwords),5)]
-			card = draw_card(word, notwords, keyword, idx, color=mycolors[idx])
+			card = draw_card(word, notwords, nospacekeyword, idx, color=mycolors[idx])
 			push!(pngs, card)
 		end
 	end
