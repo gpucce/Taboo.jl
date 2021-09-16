@@ -19,45 +19,114 @@ using JSON, Luxor, Colors,PlutoUI
 import Gumbo, HTTP, Cascadia
 end
 
-# ╔═╡ 5ef6e834-e1ee-4abc-ab4d-35cc43c5fb67
+# ╔═╡ 85cc9b1f-f294-4564-8b48-b6401d858e6d
 md"""
-# Let's play Total Taboo
+### Choose a language/Scegli una lingua $(@bind language Select(["en", "it"].=>["English", "Italiano"]))
 """
 
+# ╔═╡ 5ef6e834-e1ee-4abc-ab4d-35cc43c5fb67
+if language == "en"
+md"""
+# Let's play *360° Taboo*
+"""
+else
+md"""
+# Giochiamo a *Taboo 360°*
+"""
+end
+
 # ╔═╡ d75cd685-7e1f-4cf3-84d4-d6d1f2ad0d0a
+if language == "en"
 md"""
 ### Type in the word to search $(@bind keyword TextField((30, 1)))
 """
+else
+md"""
+### Scrivi la parola che vuoi cercare $(@bind keyword TextField((30, 1)))
+"""
+end
 
 # ╔═╡ 09f548fa-ccc0-4575-86e4-4ae3ac3e6ea9
+if language == "en"
 md"""
-### Check to start computation $(@bind docompute CheckBox())
+### Check to start Playing $(@bind docompute CheckBox())
 """
+else
+md"""
+### Clicca per iniziare a Giocare $(@bind docompute CheckBox())
+"""
+end
 
 # ╔═╡ f0ac28e4-1332-4cf9-be4b-e5b7057497d8
+if language == "en"
 md"""
 ## Utility: Don't Look Beneath This ☺☺☺
 """
-
-# ╔═╡ ee049164-afe2-4bee-8989-aea352d30a23
-wurl = "https://en.wikipedia.org/wiki/"
+else
+md"""
+## Utility: Non guardare sotto questa scritta ☺☺☺
+"""
+end
 
 # ╔═╡ f97d9287-54f6-4a47-9305-02ace869facb
 begin
-	function crawler(stringa)
+	function crawler(stringa; lang="en")
+		wurl = "https://$(lang).wikipedia.org/wiki/"
 		r = HTTP.get(join([wurl, stringa]))
 		h = Gumbo.parsehtml(String(r.body))
 		qs = eachmatch(Cascadia.Selector("#catlinks"), h.root)
-		elements = split(string.(qs)[1], "Hidden")[1] |> string
-		matches = map(collect(eachmatch(r"(?<=/wiki/Category:).*?(?=\")", elements))) do i
+		elements = string(split(string.(qs)[1], "hidden")[1])
+		reg = if lang == "en"
+				r"(?<=/wiki/Category:)[ a-zA-Z:_\/\"]*?(?=\")"
+			elseif lang == "it"
+				r"(?<=/wiki/Categoria:)[ a-zA-Z:_\/\"]*?(?=\")"
+			end
+		matches = map(
+			collect(
+				eachmatch(reg, elements)
+			)) do i
 			i.match
 		end
-		filter(!contains(" "), matches)
+		matches = filter(matches) do x
+			!contains(x, " ") & !contains(x, "Categorie")
+		end
+		string.(matches)
 	end
 	
-	function category_crawler(stringa)
-		crawler(join("Category:$(stringa)"))
+	function crawler_up2five(stringa; lang="en")
+		crawled = crawler(stringa, lang=lang)
+		idx = 1
+		while (length(crawled) < 5) & (idx < length(crawled))
+			try
+				if lang == "en"
+					push!(
+						crawled, crawler(crawled[idx], lang=lang)...
+					)
+				else
+					push!(
+						crawled, crawler(crawled[idx], lang=lang)...
+					)
+				end
+			catch
+			end
+			idx += 1
+
+		end
+		unique(crawled)
 	end
+	
+	function category_crawler(stringa; lang="en")
+		if lang == "en"
+			crawler_up2five(join("Category:$(stringa)"), lang=lang)
+		else
+			crawler_up2five(join("Categoria:$(stringa)"), lang=lang)
+		end
+	end
+	
+	function full_crawler(stringa; lang="en")
+		crawled = crawler_up2five(stringa, lang=lang)
+		return Dict(crawled .=> category_crawler.(crawled, lang=lang))
+	end	
 end
 
 # ╔═╡ d3215f60-87f7-4e6b-b454-938e02648a36
@@ -69,11 +138,8 @@ end
 begin
 	if docompute
 		cards2be = try
-			oldcards2be = Dict(
-					crawler(process_keywords(keyword)) .=> 
-					category_crawler.(crawler(process_keywords(keyword)))
-				)
-			cards2be = Dict()
+			oldcards2be = full_crawler(process_keywords(keyword), lang=language)
+			local cards2be = Dict()
 			for i in keys(oldcards2be)
 				cards2be[replace(i, "_"=>" ")] = replace.(oldcards2be[i], "_"=>" ")
 			end
@@ -86,51 +152,78 @@ begin
 	end
 end
 
+# ╔═╡ 0c9271ba-9631-44cf-872e-052499951d3d
+function draw_card(word, notwords, keyword, idx; color=colorant"red")
+	card = Drawing(500, 500, joinpath(keyword, "$(word)_$(idx).png"))
+	origin()
+	sethue(color)
+	squircle(O, 100, 120, rt=0.3, :fill)
+	colorcomponents = [color.r, color.g, color.b]
+	colorcomponents = map(colorcomponents) do c
+		if c == colorcomponents[argmax(colorcomponents)] 
+			c - min(0.7, c)
+		else
+			min(1, c + 0.6)
+		end
+	end
+	println(colorcomponents)
+	sethue(RGB(colorcomponents...))
+	p_up = O - (0, 80)
+	p_down = O + (0, 30)
+	squircle(p_up, 80, 20, rt=0.3, :fill)
+	squircle(p_down, 80, 70, rt=0.3, :stroke)
+	sethue("black")
+	text(word, p_up, halign=:center, valign=:middle)
+	for (idx, notword) in enumerate(notwords) 
+		text(
+			notword, 
+			p_down - (0, 50) + (0, 20 * idx), 
+			halign=:center, 
+			valign=:middle
+		)
+	end
+	finish()
+	card
+end
+
+# ╔═╡ 8eb315cf-abf8-4f0b-9c4e-fdf07a7aecc1
+mycolors = [collect(Colors.JULIA_LOGO_COLORS); RGB(0.94, 0.94, 0.3)]
+
 # ╔═╡ bce30e71-7d09-4dcc-b78f-1d65273e2166
 begin
 	if docompute
-	try
-		mkdir(keyword)
-	catch
-		rm(keyword, recursive=true)
-		mkdir(keyword)
-	end
-	pngs = []
-	for (idx, card2be) in enumerate(collect(cards2be)[1:min(length(cards2be),5)])
-	word, notwords = card2be
-	notwords = notwords[1:min(length(notwords),5)]
-	card = Drawing(500, 500, joinpath(keyword, "$(word)_$(idx).png"))
-		origin()
-		sethue(RGB(0.8, 0.36, 0.36))
-		squircle(O, 100, 120, rt=0.3, :fill)
-		sethue(RGB(([242, 121, 121]./255)...))
-		p_up = O - (0, 80)
-		p_down = O + (0, 30)
-		squircle(p_up, 80, 20, rt=0.3, :fill)
-		squircle(p_down, 80, 70, rt=0.3, :stroke)
-		sethue("black")
-		label(word, :N, p_up, offset=0)
-		for (idx, notword) in enumerate(notwords) 
-			text(
-				notword, 
-				p_down - (0, 50) + (0, 20 * idx), 
-				halign=:center, 
-				valign=:middle
-			)
+		try
+			mkdir(keyword)
+		catch
+			rm(keyword, recursive=true)
+			mkdir(keyword)
 		end
-		finish()
-		push!(pngs, card)
-	end
+		pngs = []
+		for (idx, card2be) in enumerate(collect(cards2be)[1:min(length(cards2be),5)])
+			word, notwords = card2be
+			notwords = notwords[1:min(length(notwords),5)]
+			card = draw_card(word, notwords, keyword, idx, color=mycolors[idx])
+			push!(pngs, card)
+		end
 	end
 end
 
 # ╔═╡ 77643261-8114-44fc-b7c6-83bf83707f94
-md"""
-### Scroll Cards $(@bind ncard NumberField(1:length(pngs)))
-"""
+begin
+	if docompute
+	md"""
+	### Scroll Cards $(@bind ncard NumberField(1:length(pngs)))
+	"""
+	end
+end
 
 # ╔═╡ c36a5f51-4078-4c47-8dda-49b7d659b226
-pngs[ncard]
+if docompute
+	pngs[ncard]
+end
+
+# ╔═╡ 2b907501-60b7-4a81-b666-f2d8d765524d
+[(col.r, col.g, col.b) for col in mycolors]
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -876,17 +969,20 @@ version = "3.5.0+0"
 """
 
 # ╔═╡ Cell order:
+# ╟─85cc9b1f-f294-4564-8b48-b6401d858e6d
 # ╟─5ef6e834-e1ee-4abc-ab4d-35cc43c5fb67
 # ╟─d75cd685-7e1f-4cf3-84d4-d6d1f2ad0d0a
 # ╟─09f548fa-ccc0-4575-86e4-4ae3ac3e6ea9
 # ╟─2a7c89f2-b08a-4393-b030-472d74b3ad2d
+# ╟─bce30e71-7d09-4dcc-b78f-1d65273e2166
 # ╟─77643261-8114-44fc-b7c6-83bf83707f94
 # ╟─c36a5f51-4078-4c47-8dda-49b7d659b226
 # ╟─f0ac28e4-1332-4cf9-be4b-e5b7057497d8
 # ╟─e021e510-161d-11ec-15a5-c3c536555e2f
-# ╟─ee049164-afe2-4bee-8989-aea352d30a23
 # ╟─f97d9287-54f6-4a47-9305-02ace869facb
 # ╟─d3215f60-87f7-4e6b-b454-938e02648a36
-# ╟─bce30e71-7d09-4dcc-b78f-1d65273e2166
+# ╟─0c9271ba-9631-44cf-872e-052499951d3d
+# ╟─8eb315cf-abf8-4f0b-9c4e-fdf07a7aecc1
+# ╟─2b907501-60b7-4a81-b666-f2d8d765524d
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
