@@ -1,3 +1,5 @@
 *_temporary/*.png
 
 *.json
+
+Manifest.toml
