@@ -15,7 +15,7 @@ end
 
 # ╔═╡ e021e510-161d-11ec-15a5-c3c536555e2f
 begin
-using JSON, Luxor, Colors,PlutoUI
+using JSON, Luxor, Colors, PlutoUI, EzXML, Markdown, Random
 import Gumbo, HTTP, Cascadia
 end
 
@@ -31,7 +31,7 @@ md"""
 """
 else
 md"""
-# Giochiamo a *Taboo 360°*
+# Giochiamo a *Taboo a 360°*
 """
 end
 
@@ -70,62 +70,44 @@ end
 
 # ╔═╡ f97d9287-54f6-4a47-9305-02ace869facb
 begin
-	function crawler(stringa; lang="en")
-		wurl = "https://$(lang).wikipedia.org/wiki/"
-		r = HTTP.get(join([wurl, stringa]))
-		h = Gumbo.parsehtml(String(r.body))
-		qs = eachmatch(Cascadia.Selector("#catlinks"), h.root)
-		elements = string(split(string.(qs)[1], "hidden")[1])
-		reg = if lang == "en"
-				r"(?<=/wiki/Category:)[ a-zA-Z:_\/\"]*?(?=\")"
-			elseif lang == "it"
-				r"(?<=/wiki/Categoria:)[ a-zA-Z:_\/\"]*?(?=\")"
-			end
-		matches = map(
-			collect(
-				eachmatch(reg, elements)
-			)) do i
-			i.match
+	function crawler(stringa; lang="en", n_word=10)
+		# wurl = "https://$(lang).wikipedia.org/wiki/"
+		wurl = "https://$(lang).wikipedia.org/w/index.php?search="
+		r = HTTP.get(join([wurl, replace(stringa, " "=>"+")]))
+		h = string(parsehtml(String(r.body)))
+		if occursin(Regex("<title>.*?the free encyclopedia.*?</title>", "i"), h)
+			error("Your query is ambiguous")
 		end
-		matches = filter(matches) do x
-			!contains(x, " ") & !contains(x, "Categorie")
+		no_space_stringa = match(
+			Regex("<title>(.*?) - Wikipedia</title>"),
+			h
+		).captures[1]
+		
+		global_match = match(
+			Regex("<p>.*?<b>$(no_space_stringa).*?<div", "si"), 
+			h
+		).match
+		m = map(eachmatch(Regex("<a href=.*?title=\"(.*?)\">"),global_match)) do i 
+			i.captures[1]
 		end
-		string.(matches)
-	end
-	
-	function crawler_up2five(stringa; lang="en")
-		crawled = crawler(stringa, lang=lang)
-		idx = 1
-		while (length(crawled) < 5) & (idx < length(crawled))
-			try
-				if lang == "en"
-					push!(
-						crawled, crawler(crawled[idx], lang=lang)...
-					)
-				else
-					push!(
-						crawled, crawler(crawled[idx], lang=lang)...
-					)
-				end
-			catch
-			end
-			idx += 1
-
+		m = filter(m) do w
+			!occursin("Help", w)
 		end
-		unique(crawled)
-	end
-	
-	function category_crawler(stringa; lang="en")
-		if lang == "en"
-			crawler_up2five(join("Category:$(stringa)"), lang=lang)
-		else
-			crawler_up2five(join("Categoria:$(stringa)"), lang=lang)
-		end
+		
+		# rand(string.(m), 10)
+		string.(m)[1:min(length(m), n_word)]
 	end
 	
 	function full_crawler(stringa; lang="en")
-		crawled = crawler_up2five(stringa, lang=lang)
-		return Dict(crawled .=> category_crawler.(crawled, lang=lang))
+		crawled = crawler(stringa, lang=lang)
+		out = Dict()
+		for crawl in crawled
+			try
+				push!(out, crawl=>crawler(crawl, lang=lang, n_word=5))
+			catch
+			end
+		end
+		return out
 	end	
 end
 
@@ -145,9 +127,15 @@ begin
 			end
 			cards2be
 		catch
-			md"""
-			### Type in another word _$(keyword)_ is not on Wikipedia
-			"""
+			if language == "en"
+				md"""
+				### Make a more accurate query than _$(keyword)_
+				"""
+			else
+				md"""
+				### Fai una ricerca piú accurata di _$(keyword)_
+				"""
+			end
 		end
 	end
 end
@@ -166,14 +154,16 @@ function draw_card(word, notwords, keyword, idx; color=colorant"red")
 			min(1, c + 0.6)
 		end
 	end
-	println(colorcomponents)
 	sethue(RGB(colorcomponents...))
 	p_up = O - (0, 80)
 	p_down = O + (0, 30)
 	squircle(p_up, 80, 20, rt=0.3, :fill)
 	squircle(p_down, 80, 70, rt=0.3, :stroke)
-	sethue("black")
+	# sethue("black")
+	fontsize(12)
+	sethue(color)
 	text(word, p_up, halign=:center, valign=:middle)
+	sethue(RGB(colorcomponents...))
 	for (idx, notword) in enumerate(notwords) 
 		text(
 			notword, 
@@ -223,23 +213,24 @@ if docompute
 	pngs[ncard]
 end
 
-# ╔═╡ 2b907501-60b7-4a81-b666-f2d8d765524d
-[(col.r, col.g, col.b) for col in mycolors]
-
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 Cascadia = "54eefc05-d75b-58de-a785-1a3403f0919f"
 Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
+EzXML = "8f5d6c58-4d21-5cfd-889c-e3ad7ee6a615"
 Gumbo = "708ec375-b3d6-5a57-a7ce-8257bf98657a"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 Luxor = "ae8d54c2-7ccd-5906-9d76-62fc9837b5bc"
+Markdown = "d6f4376e-aef5-505a-96c1-9c027394607a"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [compat]
 Cascadia = "~1.0.1"
 Colors = "~0.12.8"
+EzXML = "~1.1.0"
 Gumbo = "~0.8.0"
 HTTP = "~0.9.14"
 JSON = "~0.21.2"
@@ -362,6 +353,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "b3bfd02e98aedfa5cf885665493c5598c350cd2f"
 uuid = "2e619515-83b5-522b-bb60-26c02a35a201"
 version = "2.2.10+0"
+
+[[EzXML]]
+deps = ["Printf", "XML2_jll"]
+git-tree-sha1 = "0fa3b52a04a4e210aeb1626def9c90df3ae65268"
+uuid = "8f5d6c58-4d21-5cfd-889c-e3ad7ee6a615"
+version = "1.1.0"
 
 [[FFMPEG]]
 deps = ["FFMPEG_jll"]
@@ -970,8 +967,8 @@ version = "3.5.0+0"
 """
 
 # ╔═╡ Cell order:
-# ╟─85cc9b1f-f294-4564-8b48-b6401d858e6d
 # ╟─5ef6e834-e1ee-4abc-ab4d-35cc43c5fb67
+# ╟─85cc9b1f-f294-4564-8b48-b6401d858e6d
 # ╟─d75cd685-7e1f-4cf3-84d4-d6d1f2ad0d0a
 # ╟─09f548fa-ccc0-4575-86e4-4ae3ac3e6ea9
 # ╟─2a7c89f2-b08a-4393-b030-472d74b3ad2d
@@ -984,6 +981,5 @@ version = "3.5.0+0"
 # ╟─d3215f60-87f7-4e6b-b454-938e02648a36
 # ╟─0c9271ba-9631-44cf-872e-052499951d3d
 # ╟─8eb315cf-abf8-4f0b-9c4e-fdf07a7aecc1
-# ╟─2b907501-60b7-4a81-b666-f2d8d765524d
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
