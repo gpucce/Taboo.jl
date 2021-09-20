@@ -56,6 +56,19 @@ md"""
 """
 end
 
+# ╔═╡ 97ab7332-93af-44e2-9ac2-19dade5c7f97
+begin
+	if language == "en" 
+		md"""
+		### Select the number of cards $(@bind n_cards_notebook NumberField(5:20, default=5))
+		"""
+	else
+		md"""
+		### Seleziona il numero di carte $(@bind n_cards_notebook NumberField(5:20, 		default=5))
+		"""
+	end
+end
+
 # ╔═╡ 09f548fa-ccc0-4575-86e4-4ae3ac3e6ea9
 if language == "en"
 md"""
@@ -86,8 +99,8 @@ begin
   			username = "pucce92@gmail.com",
   			passwd = "giovi1992"
 		)
-		
-		attachments = readdir("$(keyword)_temporary", join=true)
+		no_space_keyword = replace(keyword, " "=>"_")
+		attachments = readdir("""$(no_space_keyword)_temporary""", join=true)
 		
 		url = "smtps://smtp.gmail.com:465"
 
@@ -102,14 +115,14 @@ begin
 
 		body = body = IOBuffer(
 			"Date: Fri, 18 Oct 2013 21:44:29 +0100\r\n" *
-			"From: You <pucce92@gmail.com>\r\n" *
+			"From: You <$(receiver_address)>\r\n" *
 			"To: $(receiver_address)\r\n" *
 			"Subject: Julia Test\r\n" *
 			"\r\n" *
 			"Test Message\r\n"
 		)
 		url = "smtps://smtp.gmail.com:465"
-		rcpt = ["<pucce92@gmail.com>"]
+		rcpt = ["<$(receiver_address)>"]
 		from = "<pucce92@gmail.com>"
 		
 		body2 = get_body(to, from, subject, message; attachments)
@@ -120,8 +133,7 @@ end;
 
 # ╔═╡ f97d9287-54f6-4a47-9305-02ace869facb
 begin
-	function crawler(stringa; lang="en", n_word=10)
-		# wurl = "https://$(lang).wikipedia.org/wiki/"
+	function crawler(stringa; lang="en", n_words=10)
 		wurl = "https://$(lang).wikipedia.org/w/index.php?search="
 		r = HTTP.get(join([wurl, replace(stringa, " "=>"+")]))
 		h = string(parsehtml(String(r.body)))
@@ -137,23 +149,30 @@ begin
 			Regex("<p>.*?<b>$(no_space_stringa).*?<div", "si"), 
 			h
 		).match
-		m = map(eachmatch(Regex("<a href=.*?title=\"(.*?)\">"),global_match)) do i 
-			i.captures[1]
-		end
-		m = filter(m) do w
-			!occursin("Help", w)
+		
+		m = map(eachmatch(Regex("<a href=.*?title=\"(.*?)\">"), global_match)) do i 
+			strip(i.captures[1])
 		end
 		
-		# rand(string.(m), 10)
-		string.(m)[1:min(length(m), n_word)]
+		m = filter(m) do w
+			!any([
+					occursin("Help", w),
+					occursin("Wikipedia", w),
+					occursin(r"^\d+$", w),
+					occursin("Aiuto", w),
+					]
+			)
+		end
+		
+		string.(m)[1:min(length(m), n_words)]
 	end
 	
-	function full_crawler(stringa; lang="en")
-		crawled = crawler(stringa, lang=lang)
+	function full_crawler(stringa; lang="en", n_keywords=5, n_words=5)
+		crawled = crawler(stringa, lang=lang, n_words=n_keywords)
 		out = Dict()
 		for crawl in crawled
 			try
-				push!(out, crawl=>crawler(crawl, lang=lang, n_word=5))
+				push!(out, crawl=>crawler(crawl, lang=lang, n_words=n_words))
 			catch
 			end
 		end
@@ -170,7 +189,7 @@ end;
 begin
 	if docompute
 		cards2be = try
-			oldcards2be = full_crawler(process_keywords(keyword), lang=language)
+			oldcards2be = full_crawler(process_keywords(keyword), lang=language, n_keywords = n_cards_notebook)
 			local cards2be = Dict()
 			for i in keys(oldcards2be)
 				cards2be[replace(i, "_"=>" ")] = replace.(oldcards2be[i], "_"=>" ")
@@ -244,10 +263,15 @@ begin
 				mkdir(nospacekeyword)
 			end
 			pngs = []
-			for (idx, card2be) in enumerate(collect(cards2be)[1:min(length(cards2be),5)])
+			for (idx, card2be) in enumerate(cards2be)
 				word, notwords = card2be
-				notwords = notwords[1:min(length(notwords),5)]
-				card = draw_card(word, notwords, nospacekeyword, idx, color=mycolors[idx])
+				card = draw_card(
+					word, 
+					notwords, 
+					nospacekeyword, 
+					idx, 
+					color=mycolors[idx%5 + 1]
+				)
 				push!(pngs, card)
 			end
 			pngs
@@ -277,6 +301,7 @@ end
 # ╟─5ef6e834-e1ee-4abc-ab4d-35cc43c5fb67
 # ╟─85cc9b1f-f294-4564-8b48-b6401d858e6d
 # ╟─d75cd685-7e1f-4cf3-84d4-d6d1f2ad0d0a
+# ╟─97ab7332-93af-44e2-9ac2-19dade5c7f97
 # ╟─09f548fa-ccc0-4575-86e4-4ae3ac3e6ea9
 # ╟─2a7c89f2-b08a-4393-b030-472d74b3ad2d
 # ╟─bce30e71-7d09-4dcc-b78f-1d65273e2166
