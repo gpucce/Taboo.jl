@@ -97,7 +97,7 @@ begin
 		opt = SendOptions(
   			isSSL = true,
   			username = "b4dsatbright@gmail.com",
-  			passwd = "b@ds2020"
+  			passwd = ""
 		)
 		no_space_keyword = replace(keyword, " "=>"_")
 		attachments = readdir("""$(no_space_keyword)_temporary""", join=true)
