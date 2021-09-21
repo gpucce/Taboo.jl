@@ -96,16 +96,21 @@ begin
 	if accept_send
 		opt = SendOptions(
   			isSSL = true,
-  			username = "pucce92@gmail.com",
-  			passwd = "giovi1992"
+  			username = "b4dsatbright@gmail.com",
+  			passwd = "b@ds2020"
 		)
 		no_space_keyword = replace(keyword, " "=>"_")
 		attachments = readdir("""$(no_space_keyword)_temporary""", join=true)
 		
 		url = "smtps://smtp.gmail.com:465"
-
-		message = "Don't forget to check out SMTPClient.jl"
-		subject = "SMPTClient.jl"
+		
+		message = if language == "en"
+			"Here are your cards!!"
+		else
+			"Ecco le tue carte!!"
+		end
+		
+		subject = "B4DS@bright"
 
 		to = ["<$(receiver_address)>"]
 		cc = [""]
