@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.16.1
+# v0.16.0
 
 using Markdown
 using InteractiveUtils
@@ -16,6 +16,9 @@ end
 # ╔═╡ 90a71c60-1ca2-11ec-01db-6516a5e9daca
 using DataFrames, CSV, StatsPlots, Dates, StatsBase, PlutoUI
 
+# ╔═╡ c9e7883c-f3dd-4641-8b3b-209b3ba12ccd
+html"<button onclick='present()'>present</button>"
+
 # ╔═╡ be09d6df-b27d-480b-871c-fea6bd8a0a42
 @bind tic Clock()
 
@@ -26,18 +29,21 @@ t1 = DateTime("20210701", "yyyymmdd")
 n = 100 # Number of values
 
 randomdates = t0 + Dates.Millisecond.(floor.(rand(n)*(t1-t0).value))
-end
+end;
 
 # ╔═╡ 4eb24890-27f7-4caa-a97d-5f0f338e7de4
 function process_df(df)
 	df[!, r"ts"] = hcat(map(eachcol(df[:, r"ts"])) do col
 			DateTime.(col, "yyyy-mm-dd HH:MM:SS.sss")
 		end...)
+	
+	df = df[Dates.value.(Year.(df.end_ts)) .> 2018, :]
+	
 	lasting = Dates.value.(
 		[Millisecond(0); df[1:end-1, "start_ts"] .- df[2:end, "end_ts"]]
 	)
 	lasting = map(lasting) do l
-		l > 50000 ? 0 : l
+		abs(l) > 10000 ? 0 : l
 	end
 	df[:,"lasting"] = lasting
 	df
@@ -48,6 +54,7 @@ begin
 	tic
 	formattednow = replace(string(now())[1:end-7], "T"=>"-")
 	date = replace(string(rand(randomdates))[1:end-7], "T"=>"-")
+	brightdate = "2021-09-24-8:00"
 	fulldf = process_df(
 		DataFrame(CSV.File(download("http://rfid.thingsoninternet.it")))
 	)
@@ -59,6 +66,24 @@ end;
 
 # ╔═╡ 317bd49a-6ed9-40aa-b22f-208ef1d220a1
 gb = groupby(df, "tag_id");
+
+# ╔═╡ 4df7779f-3ed2-42b9-aa07-502f9c62b6bc
+md"""
+# MTM4.0
+"""
+
+# ╔═╡ a74c64d6-44d1-44cc-a11d-06e2b8150c40
+md"""
+## Time per tag
+"""
+
+# ╔═╡ 7124d87b-3e8b-4553-9a7c-bf748a77ee49
+combine(gb, "lasting" => mean => "mean")
+
+# ╔═╡ 66784043-0abf-45e9-9668-7293771c8fd4
+md"""
+## Iterations per tag
+"""
 
 # ╔═╡ 87fd0951-e4f0-45be-bc9c-5a58bacf8a1d
 combine(gb, :lasting => mean);
@@ -72,6 +97,11 @@ begin
 	plot(plots...)
 end
 
+# ╔═╡ 1d0d06be-9053-4984-86e4-a3f1613d5f6e
+md"""
+## Duration and Lasting
+"""
+
 # ╔═╡ a6aa8549-1338-4ff8-81df-ae17d06e30c4
 plot(
 	plot(df.duration, title="Duration"), 
@@ -79,10 +109,15 @@ plot(
 	layout=(2,1)
 )
 
+# ╔═╡ d7ee6cdf-d72a-47f5-a72e-c4dfada057a9
+md"""
+## Single versus Bright Crowd
+"""
+
 # ╔═╡ b892c365-6fa6-42ad-b8f8-18378f53b28e
 begin
-	@df df violin(repeat([1], outer=nrow(df)), :duration, side=:left)
-	@df df violin!(repeat([1], outer=nrow(df)), :lasting, side=:right)
+	@df fulldf violin(repeat([1], outer=nrow(df)), :lasting, side=:left, label="Bright Crowd", linewidth=0)
+	@df df violin!(repeat([1], outer=nrow(df)), :lasting, side=:right, label="Current User", linewidth=0)
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -1220,15 +1255,22 @@ version = "0.9.1+5"
 """
 
 # ╔═╡ Cell order:
+# ╟─c9e7883c-f3dd-4641-8b3b-209b3ba12ccd
 # ╟─90a71c60-1ca2-11ec-01db-6516a5e9daca
 # ╟─be09d6df-b27d-480b-871c-fea6bd8a0a42
 # ╟─941967f9-276b-43c3-acbf-f740cbd78fbe
 # ╟─4eb24890-27f7-4caa-a97d-5f0f338e7de4
 # ╟─8c07578f-48d5-4b03-897c-78d407c433ed
 # ╟─317bd49a-6ed9-40aa-b22f-208ef1d220a1
+# ╟─4df7779f-3ed2-42b9-aa07-502f9c62b6bc
+# ╟─a74c64d6-44d1-44cc-a11d-06e2b8150c40
+# ╟─7124d87b-3e8b-4553-9a7c-bf748a77ee49
+# ╟─66784043-0abf-45e9-9668-7293771c8fd4
 # ╟─87fd0951-e4f0-45be-bc9c-5a58bacf8a1d
 # ╟─3d7242f5-7b62-4e85-bf00-8ffe1e941520
+# ╟─1d0d06be-9053-4984-86e4-a3f1613d5f6e
 # ╟─a6aa8549-1338-4ff8-81df-ae17d06e30c4
+# ╟─d7ee6cdf-d72a-47f5-a72e-c4dfada057a9
 # ╟─b892c365-6fa6-42ad-b8f8-18378f53b28e
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
