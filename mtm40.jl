@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.16.0
+# v0.16.1
 
 using Markdown
 using InteractiveUtils
@@ -19,16 +19,28 @@ using DataFrames, CSV, StatsPlots, Dates, StatsBase, PlutoUI
 # ╔═╡ c9e7883c-f3dd-4641-8b3b-209b3ba12ccd
 html"<button onclick='present()'>present</button>"
 
+# ╔═╡ 50cfe18a-a199-4c74-af49-65b04f34430c
+@bind dotime Button("Start")
+
+# ╔═╡ 06716f18-457a-4f16-88d5-55f0158153f3
+begin
+	dotime
+	formattednow = replace(string(now()-Dates.Hour(2))[1:end-7], "T"=>"-")
+end
+
 # ╔═╡ be09d6df-b27d-480b-871c-fea6bd8a0a42
 @bind tic Clock()
 
 # ╔═╡ 941967f9-276b-43c3-acbf-f740cbd78fbe
 begin
-t0 = DateTime("20210401", "yyyymmdd")
-t1 = DateTime("20210701", "yyyymmdd")
-n = 100 # Number of values
-
-randomdates = t0 + Dates.Millisecond.(floor.(rand(n)*(t1-t0).value))
+	converter = Dict(
+		"632" => "1",
+		"0E7" => "2",
+		"AFC" => "3",
+		"272" => "4",
+		"F54" => "5",
+		"11A" => "6",
+	)
 end;
 
 # ╔═╡ 4eb24890-27f7-4caa-a97d-5f0f338e7de4
@@ -43,26 +55,29 @@ function process_df(df)
 		[Millisecond(0); df[1:end-1, "start_ts"] .- df[2:end, "end_ts"]]
 	)
 	lasting = map(lasting) do l
-		abs(l) > 10000 ? 0 : l
+		abs(l) > 10000 ? 0 : l ./ 1000
 	end
+	df[!, "duration"] = df[:, "duration"] ./ 1000
 	df[:,"lasting"] = lasting
+	h(x) = x[end-2:end]
+	h2(x) = converter[x]
+	df[!, "tag_id"] = h2.(h.(string.(df[:,"tag_id"])))
+	df = df[nrow(df):-1:1, :]
 	df
 end
 
 # ╔═╡ 8c07578f-48d5-4b03-897c-78d407c433ed
 begin
 	tic
-	formattednow = replace(string(now())[1:end-7], "T"=>"-")
-	date = replace(string(rand(randomdates))[1:end-7], "T"=>"-")
-	brightdate = "2021-09-24-8:00"
+	brightdate = "2021-09-24-13:05"
 	fulldf = process_df(
-		DataFrame(CSV.File(download("http://rfid.thingsoninternet.it")))
+		DataFrame(CSV.File(download("http://rfid.thingsoninternet.it/?from=$(brightdate)")))
 	)
 	df = process_df(DataFrame(
-		CSV.File(download("http://rfid.thingsoninternet.it/?from=$(date)"))
+		CSV.File(download("http://rfid.thingsoninternet.it/?from=$(formattednow)"))
 	))
 	df
-end;
+end
 
 # ╔═╡ 317bd49a-6ed9-40aa-b22f-208ef1d220a1
 gb = groupby(df, "tag_id");
@@ -92,7 +107,8 @@ combine(gb, :lasting => mean);
 begin
 	plots = []
 	for i in gb
-		push!(plots, @df i plot(:lasting, title=i.tag_id[1]))
+		# push!(plots, @df i plot(:lasting, title=i.tag_id[1]))
+		push!(plots, @df i boxplot(:lasting, title=i.tag_id[1]))
 	end
 	plot(plots...)
 end
@@ -104,8 +120,8 @@ md"""
 
 # ╔═╡ a6aa8549-1338-4ff8-81df-ae17d06e30c4
 plot(
-	plot(df.duration, title="Duration"), 
-	plot(df.lasting, c="red", title="Lasting"), 
+	plot(df.duration, xticks=(1:nrow(df), df.tag_id), title="Duration"), 
+	plot(df.lasting, xticks=(1:nrow(df), df.tag_id), c="red", title="Lasting"), 
 	layout=(2,1)
 )
 
@@ -1257,6 +1273,8 @@ version = "0.9.1+5"
 # ╔═╡ Cell order:
 # ╟─c9e7883c-f3dd-4641-8b3b-209b3ba12ccd
 # ╟─90a71c60-1ca2-11ec-01db-6516a5e9daca
+# ╟─50cfe18a-a199-4c74-af49-65b04f34430c
+# ╟─06716f18-457a-4f16-88d5-55f0158153f3
 # ╟─be09d6df-b27d-480b-871c-fea6bd8a0a42
 # ╟─941967f9-276b-43c3-acbf-f740cbd78fbe
 # ╟─4eb24890-27f7-4caa-a97d-5f0f338e7de4
