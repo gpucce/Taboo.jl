@@ -12,7 +12,7 @@ works.
 
 ``` python
 from PIL import Image
-from Taboo.core import draw_card, load_taboo_words, add_taboo_words
+from Taboo import draw_card, load_taboo_words, add_taboo_words
 ```
 
 ``` python
