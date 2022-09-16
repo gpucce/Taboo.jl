@@ -3,6 +3,10 @@
 # %% auto 0
 __all__ = ['draw_card', 'load_taboo_words', 'add_taboo_words']
 
+# %% ../00_core.ipynb 2
+import nbdev; nbdev.nbdev_export()
+from nbdev.showdoc import *
+
 # %% ../00_core.ipynb 3
 import json
 from PIL import Image, ImageDraw, ImageFont
