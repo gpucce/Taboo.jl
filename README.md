@@ -10,8 +10,6 @@ from PIL import Image
 from Taboo.core import draw_card, load_taboo_words, add_taboo_words
 ```
 
-    ImportError: cannot import name 'draw_card' from 'Taboo' (/home/gpuccetti/Repos/Taboo.jl/Taboo/__init__.py)
-
 ``` python
 print("organic farming")
 Image.open("./test_raw_images/organic_farming_raw.png")
