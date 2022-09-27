@@ -32,63 +32,27 @@ im
 ![](index_files/figure-gfm/cell-4-output-1.png)
 
 ``` python
-taboo_words = load_taboo_words("./test_data/taboo_cards/Football.json")["cards"]
-taboo_words
+taboo_words = load_taboo_words("./test_data/taboo_cards/Organic farming.json")["cards"]
+taboo_words[:2]
 ```
 
-    [{'Team sport': ['Sport',
-       'Sports team',
-       'Basketball',
-       'Volleyball',
-       'Rugby football',
-       'Water polo',
-       'Handball',
-       'Lacrosse',
-       'Cricket',
-       'Baseball']},
-     {'Kick (football)': ['Football']},
-     {'Football (ball)': ['Ball',
-       'Football',
-       'Goal (sports)',
-       'Score (sport)',
-       'Pitch (sports field)',
-       'Pig bladder']},
-     {'Goal (sports)': ['Ball',
-       'Hockey puck',
-       'Score (sport)',
-       'Backboard (basketball)']},
-     {'Football (word)': []},
-     {'Association football': ['Team sport',
-       'Football player',
-       'Ball (association football)',
-       'Football pitch',
-       'Scoring in association football',
-       'Goal (sports)']},
-     {'Gridiron football': ['North America',
-       'Football',
-       'United States',
-       'Canada',
-       'American football',
-       'Canadian football',
-       'Indoor American football',
-       'Eight-man football',
-       'Flag football',
-       'Touch football (American)']},
-     {'American football': ['Team sport',
-       'American football field',
-       'Offense (sports)',
-       'Ball (gridiron football)',
-       'Rush (gridiron football)',
-       'Forward pass',
-       'Defense (sports)',
-       'Down (gridiron football)',
-       'Turnover on downs',
-       'Glossary of American football terms']},
-     {'Canadian football': ['Team sport', 'Canada', 'End zone']},
-     {'Australian rules football': ['Contact sport',
-       'Australian rules football playing field',
-       'Ground (cricket)',
-       'Football (ball)']}]
+    [{'Manure': ['Organic matter',
+       'Organic fertilizer',
+       'Agriculture',
+       'Feces',
+       'Compost',
+       'Green manure',
+       'Soil fertility',
+       'Nutrient',
+       'Nitrogen',
+       'Bacteria']},
+     {'Green manure': ['Agriculture',
+       'Biomass (ecology)',
+       'Manure',
+       'Soil organic matter',
+       'Legume',
+       'Organic farming',
+       'Intensive farming']}]
 
 ``` python
 add_taboo_words(im, taboo_words[0])
@@ -97,7 +61,7 @@ add_taboo_words(im, taboo_words[0])
 ![](index_files/figure-gfm/cell-6-output-1.png)
 
 ``` python
-add_taboo_words(im, taboo_words[1])
+add_taboo_words(im, taboo_words[2])
 ```
 
 ![](index_files/figure-gfm/cell-7-output-1.png)
