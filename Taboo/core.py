@@ -66,7 +66,7 @@ def add_taboo_words(img, words):
     font = _resize_font(top_w, img.width-100, 50)
     draw.text((img.width // 2, 75), top_w, fill=(0, 0, 0, 255), anchor="mm", font=font)
 
-    for idx, forb_w in enumerate(forb_ws):
+    for idx, forb_w in enumerate(forb_ws[:5]):
         down_shift = (50 / 2.5) + (idx + 1) * (50)
         draw.rounded_rectangle([(70, 50 + down_shift), (img.width-70, 90 + down_shift)], fill = (255, 255, 255, 50), radius=20)
         font = _resize_font(forb_w, img.width-140, 40)
