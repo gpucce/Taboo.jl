@@ -17,7 +17,7 @@ from Taboo import draw_card, load_taboo_words, add_taboo_words
 
 ``` python
 print("organic farming")
-Image.open("./test_raw_images/organic_farming_raw.png")
+Image.open("./test_data/raw_images/organic_farming_raw.png")
 ```
 
     organic farming
@@ -25,25 +25,79 @@ Image.open("./test_raw_images/organic_farming_raw.png")
 ![](index_files/figure-gfm/cell-3-output-2.png)
 
 ``` python
-im = draw_card("./test_raw_images/organic_farming_raw.png")
+im = draw_card("./test_data/raw_images/organic_farming_raw.png")
 im
 ```
 
 ![](index_files/figure-gfm/cell-4-output-1.png)
 
 ``` python
-taboo_words = load_taboo_words("./test_taboo_cards/test_organic_farming.json")
+taboo_words = load_taboo_words("./test_data/taboo_cards/Football.json")["cards"]
 taboo_words
 ```
 
-    {'organic farming': ['random_word 1',
-      'random_word 2',
-      'random_word 3',
-      'random_word 4',
-      'random_word 5']}
+    [{'Team sport': ['Sport',
+       'Sports team',
+       'Basketball',
+       'Volleyball',
+       'Rugby football',
+       'Water polo',
+       'Handball',
+       'Lacrosse',
+       'Cricket',
+       'Baseball']},
+     {'Kick (football)': ['Football']},
+     {'Football (ball)': ['Ball',
+       'Football',
+       'Goal (sports)',
+       'Score (sport)',
+       'Pitch (sports field)',
+       'Pig bladder']},
+     {'Goal (sports)': ['Ball',
+       'Hockey puck',
+       'Score (sport)',
+       'Backboard (basketball)']},
+     {'Football (word)': []},
+     {'Association football': ['Team sport',
+       'Football player',
+       'Ball (association football)',
+       'Football pitch',
+       'Scoring in association football',
+       'Goal (sports)']},
+     {'Gridiron football': ['North America',
+       'Football',
+       'United States',
+       'Canada',
+       'American football',
+       'Canadian football',
+       'Indoor American football',
+       'Eight-man football',
+       'Flag football',
+       'Touch football (American)']},
+     {'American football': ['Team sport',
+       'American football field',
+       'Offense (sports)',
+       'Ball (gridiron football)',
+       'Rush (gridiron football)',
+       'Forward pass',
+       'Defense (sports)',
+       'Down (gridiron football)',
+       'Turnover on downs',
+       'Glossary of American football terms']},
+     {'Canadian football': ['Team sport', 'Canada', 'End zone']},
+     {'Australian rules football': ['Contact sport',
+       'Australian rules football playing field',
+       'Ground (cricket)',
+       'Football (ball)']}]
 
 ``` python
-add_taboo_words(im, taboo_words)
+add_taboo_words(im, taboo_words[0])
 ```
 
 ![](index_files/figure-gfm/cell-6-output-1.png)
+
+``` python
+add_taboo_words(im, taboo_words[1])
+```
+
+![](index_files/figure-gfm/cell-7-output-1.png)

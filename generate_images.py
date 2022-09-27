@@ -1,23 +1,25 @@
 from pathlib import Path
 import re
 
-from Taboo import draw_card, load_taboo_words, add_taboo_words
+from Taboo import draw_card, load_taboo_words, add_taboo_words, Crawler
 from tqdm.auto import tqdm
 
-test_taboo_words = load_taboo_words("./test_data/taboo_cards/test_organic_farming.json")
-im_dict = {i.stem:add_taboo_words(draw_card(i), test_taboo_words) for i in tqdm(list(Path("./data/raw_images").iterdir()))}
-ims_names = list(im_dict.keys())
-ims = list(im_dict.values())
-
-
+crawler = Crawler("./data/taboo_cards/", "en")
 output_path = Path("data/taboo_cards_images")
 output_path.mkdir(exist_ok=True, parents=True)
 new_names = []
+ims = list(Path("./data/raw_images").iterdir())
 progressbar = tqdm(range(len(ims)))
-for i, j in zip(ims_names, ims):
-    new_name = re.sub("^\d.*of ", "", i)
+for image_path in tqdm(ims):
+    new_name = re.sub("^\d.*of ", "", image_path.stem)
     new_name = re.sub(", digi.*\]__", "", new_name)
     new_names.append(new_name)
-    j.save(output_path / f"{new_name}.png")
+    loc_taboo_cards = crawler.create_cards(new_name)
+    crawler.save_cards(loc_taboo_cards)
+    for taboo_card in loc_taboo_cards["cards"]:
+        new_im = add_taboo_words(draw_card(image_path), taboo_card)
+        file_name = list(taboo_card.keys())[0].replace("/", "_")
+        new_im.save(output_path / f"{file_name}.png")
+        list(taboo_card.keys())[0]
     progressbar.update()
 progressbar.close()
