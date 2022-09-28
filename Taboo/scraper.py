@@ -84,7 +84,7 @@ class Crawler():
     def create_cards(self, query):
         url = self.search_url + query.replace(" ", "+")
         cards = self.create_card(url, final=False)
-        out = {"query": str(cards["starting_page"]), "cards":[]}
+        out = {"query": query.capitalize().replace(" ", "_"), "cards":[]}
         for url in cards["children_pages"].keys():
             try:
                 new_card = self.create_card(url, final=True)
